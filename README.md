@@ -22,6 +22,7 @@ uv sync
 ```
 
 ## Roadmap
+* Optimal COS method bounds
 * eSSVI
 * Rough Heston
 * Quadratic Rough Heston

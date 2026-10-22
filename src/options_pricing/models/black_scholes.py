@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import norm
+from scipy.optimize import newton
 
 
 def bs_charfun(u, x, tau, r, q, params):
@@ -12,20 +13,32 @@ def bs_charfun(u, x, tau, r, q, params):
     return np.exp(i*u*x + phi1 + phi2)
 
 
-def iv(c, s0, tau, r, K, max_iter=200, tol=1e-5):
-    sigma0 = np.ones_like(c)
+def bs_call(s0, tau, r, K, sigma):
+    sigma = np.clip(sigma, 1e-5, 5.0)
 
-    for i in range(max_iter):
-        d1 = (np.log(s0/K) + tau*(r + .5*sigma0))/(sigma0*np.sqrt(tau))
-        d2 = d1 - sigma0*np.sqrt(tau)
-        c_bs = s0*norm.cdf(d1) - K*np.exp(-r*tau)*norm.cdf(d2)
+    d1 = (np.log(s0/K) + tau*(r + .5*(sigma**2)))/(sigma*np.sqrt(tau))
+    d2 = d1 - sigma*np.sqrt(tau)
+    c_bs = s0*norm.cdf(d1) - K*np.exp(-r*tau)*norm.cdf(d2)
 
-        vega = s0*np.sqrt(tau)*norm.pdf(d1)
-        sigma = sigma0 - (c_bs - c)/vega
+    return c_bs
 
-        if (abs(sigma - sigma0) < tol).all():
-            break
+def vega_fun(sigma, c, s0, tau, r, K):
+    sigma = np.clip(sigma, 1e-5, 5.0)
 
-        sigma0 = sigma
+    d1 = (np.log(s0/K) + tau*(r + .5*(sigma**2)))/(sigma*np.sqrt(tau))
 
-    return sigma
+    vega = s0*np.sqrt(tau)*norm.pdf(d1)
+    vega = np.clip(vega, 1e-6, np.inf)
+
+    return vega
+
+def obj(sigma, c, s0, tau, r, K):
+    return bs_call(s0, tau, r, K, sigma) - c
+
+def solve(c, s0, tau, r, K):
+    tau = tau[:, None]
+    x0 = np.ones_like(c)*0.2
+
+    iv = newton(obj, x0, vega_fun, (c, s0, tau, r, K), 1e-5, 1000)
+
+    return iv
