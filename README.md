@@ -23,6 +23,7 @@ uv sync
 
 ## Roadmap
 * Optimal COS method bounds
+    * Cumulant functions for every model
 * eSSVI
 * Rough Heston
 * Quadratic Rough Heston
