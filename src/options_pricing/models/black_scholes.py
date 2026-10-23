@@ -13,32 +13,46 @@ def bs_charfun(u, x, tau, r, q, params):
     return np.exp(i*u*x + phi1 + phi2)
 
 
-def bs_call(s0, tau, r, K, sigma):
-    sigma = np.clip(sigma, 1e-5, 5.0)
-
-    d1 = (np.log(s0/K) + tau*(r + .5*(sigma**2)))/(sigma*np.sqrt(tau))
+def bs_call(s0, k, tau, r, sigma):
+    d1 = np.log(s0/k) + tau*(r + 0.5*sigma**2)/(sigma*np.sqrt(tau))
     d2 = d1 - sigma*np.sqrt(tau)
-    c_bs = s0*norm.cdf(d1) - K*np.exp(-r*tau)*norm.cdf(d2)
 
-    return c_bs
+    return s0*norm.cdf(d1) - k*np.exp(-r*tau)*norm.cdf(d2)
 
-def vega_fun(sigma, c, s0, tau, r, K):
-    sigma = np.clip(sigma, 1e-5, 5.0)
+def vega_fun(s0, k, tau, r, sigma):
+    d1 = np.log(s0/k) + tau*(r + 0.5*sigma**2)/(sigma*np.sqrt(tau))
 
-    d1 = (np.log(s0/K) + tau*(r + .5*(sigma**2)))/(sigma*np.sqrt(tau))
+    return s0*np.sqrt(tau)*norm.pdf(d1)
 
-    vega = s0*np.sqrt(tau)*norm.pdf(d1)
-    vega = np.clip(vega, 1e-6, np.inf)
-
-    return vega
-
-def obj(sigma, c, s0, tau, r, K):
-    return bs_call(s0, tau, r, K, sigma) - c
-
-def solve(c, s0, tau, r, K):
+def iv_solve(c, s0, k, tau, r, tol=1e-8, max_iter=200):
     tau = tau[:, None]
-    x0 = np.ones_like(c)*0.2
 
-    iv = newton(obj, x0, vega_fun, (c, s0, tau, r, K), 1e-5, 1000)
+    active = np.ones_like(c, dtype=bool)
 
-    return iv
+    s0 = np.broadcast_to(s0, c.shape)
+    tau = np.broadcast_to(tau, c.shape)
+    k = np.broadcast_to(k, c.shape)
+    sigma = np.ones_like(c)*0.2
+
+    for i in range(max_iter):
+        if not np.any(active):
+            break
+
+        c_act = c[active]
+        s0_act = s0[active]
+        tau_act = tau[active]
+        k_act = k[active]
+        sigma_act = sigma[active]
+
+        vega = vega_fun(s0_act, k_act, tau_act, r, sigma_act)
+        vega = np.clip(vega, 1e-10, np.inf)
+
+        c_bs = bs_call(s0_act, k_act, tau_act, r, sigma_act)
+
+        diff = c_bs - c_act
+
+        sigma[active] = sigma_act - diff/vega
+
+        active[active] = np.abs(diff) >= tol
+
+    return sigma

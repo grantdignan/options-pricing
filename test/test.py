@@ -10,39 +10,38 @@ taus = mkt['tau'].to_numpy()
 mkt = mkt.drop(columns='tau')
 
 vegas = pd.read_csv('test/vegas.csv').drop(columns='tau')
-vegas = np.maximum(vegas.values, 1e-3)
+vegas = np.maximum(vegas.values, 1e-4)
 
 strikes = mkt.columns.to_numpy(dtype=float)
 cf = heston.heston_charfun
-x = np.log(7712.57)
+s0 = 7712.57
+x = np.log(s0)
 r = .040799
 bounds = [(1e-4, 1.0), (1e-4, 1.0), (1e-2, 20.0), (1e-2, 3.0), (-1.0, 0.0)]
 x0 = [0.065025, 0.065025, 3.0, 0.8, -0.75]
 
-# de = calibration.global_opt(mkt.values, vegas**2, taus, strikes, cf, x, r, 0, bounds, x0)
-# result = calibration.min_opt(mkt.values, vegas**2, taus, strikes, cf, x, r, 0, bounds, de.x)
+de = calibration.global_opt(mkt.values, vegas**2, taus, strikes, cf, x, r, 0, bounds, x0)
+result = calibration.min_opt(mkt.values, vegas**2, taus, strikes, cf, x, r, 0, bounds, de.x)
 
-# print(result.fun)
-# print(result.x)
-
-params = [ 0.01831349,  0.824739,    0.15196894,  1.08560558, -0.19990609]
+print(result.fun)
+print(result.x)
 
 strike_grid = np.arange(strikes.min(), strikes.max(), 1)
 
-calls = fg_cos.fg_cos(cf, x, taus, r, 0, params, strike_grid, x-.2, x+.2, 128)
-iv_model = black_scholes.solve(calls, 7712.57, taus, r, strike_grid)
-iv_mkt = black_scholes.solve(mkt.values, 7712.57, taus, r, strikes)
+calls = fg_cos.fg_cos(cf, x, taus, r, 0, result.x, strike_grid, x-.5, x+.5, 128)
+ivs_model = black_scholes.iv_solve(calls, s0, strike_grid, taus, r)
+ivs_mkt = black_scholes.iv_solve(mkt.values, s0, strikes, taus, r)
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 
-X, Y = np.meshgrid(strike_grid, taus[2:])
-Z = iv_model[2:, :]
+X, Y = np.meshgrid(strike_grid, taus)
+Z = ivs_model
 
 surf = ax.plot_surface(X, Y, Z, cmap='GnBu')
 
 strikes, taus = np.meshgrid(strikes, taus)
 
-# ax.scatter3D(strikes, taus, iv_mkt, c='red', s=10, marker='+')
+ax.scatter3D(strikes, taus, ivs_mkt, c='red', s=10, marker='+')
 
 plt.show()
