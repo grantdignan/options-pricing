@@ -10,13 +10,12 @@ def heston_charfun(u, x, tau, r, q, params):
     g = (kappa - a - d)/(kappa - a + d)
     ge = g*np.exp(-d*tau)
 
-    phi1 = i*u*(r - q)*tau
-    phi2 = theta*kappa*(sigma**-2)*(-2*np.log((1 - ge)/(1 - g)) + (kappa - a - d)*tau)
-    phi3 = v0*(sigma**-2)*(kappa - a - d)*(1 - np.exp(-d*tau))/(1 - ge)
+    C = i*u*(r-q)*tau + theta*kappa*(sigma**-2)*(-2*np.log((1 - ge)/(1 - g)) + (kappa - a - d)*tau)
+    D = (sigma**-2)*(kappa - a - d)*(1 - np.exp(-d*tau))/(1 - ge)
 
-    return np.exp(i*u*x + phi1 + phi2 + phi3)
+    return np.exp(i*u*x + C + D*v0)
 
-def feller_fun_heston(params):
+def feller(params):
     v0, theta, kappa, sigma, rho = params
 
     return 2*kappa*theta - sigma**2

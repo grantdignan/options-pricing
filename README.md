@@ -10,6 +10,8 @@ Models:
 
 This library uses Fang and Osterlee's COS method for the pricing.
 
+![Alt Text](/images/implied_volatility_surface.png)
+
 ## Installation
 Make sure to have uv installed
 

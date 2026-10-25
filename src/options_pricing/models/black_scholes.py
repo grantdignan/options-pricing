@@ -7,10 +7,10 @@ def bs_charfun(u, x, tau, r, q, params):
     i = 1j
     sigma = params[0]
 
-    phi1 = tau*i*u*(r - q - 0.5*sigma**2)
-    phi2 = -0.5*(sigma**2)*(u**2)*tau
+    psi1 = tau*i*u*(r - q - 0.5*sigma**2)
+    psi2 = -0.5*(sigma**2)*(u**2)*tau
 
-    return np.exp(i*u*x + phi1 + phi2)
+    return np.exp(i*u*x + psi1 + psi2)
 
 
 def bs_call(s0, k, tau, r, sigma):
