@@ -13,12 +13,12 @@ This library uses Fang and Osterlee's COS method for the pricing.
 ![Alt Text](/images/implied_volatility_surface.png)
 
 ## Installation
-Make sure to have uv installed
+This project uses uv.
 
 ```
 git clone https://github.com/grantdignan/options-pricing
 
-cd options
+cd options-pricing
 
 uv sync
 ```
