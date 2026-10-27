@@ -21,7 +21,7 @@ def fo_cos(cf, x, tau, r, q, params, lnk, k, j, a, b):
     v = np.empty((tau.shape[0], N, k.shape[2]))
 
     uj = u[:, 1:, :]
-    i1 = (np.exp(b)*np.cos(np.pi*j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
     i2 = (k*np.sin(uj*(c-a)))/uj
 
     v[:, 1:, :] = np.real(i1 + i2)
@@ -43,11 +43,8 @@ def bs_bounds(x, tau, r, q, params, L=12):
     i = 1j
     sigma = params[0]
 
-    du = i*x + tau*i*(r-q-0.5*(sigma**2))
-    duu = -(sigma**2)*tau
-
-    c1 = du/i
-    c2 = -duu
+    c1 = x + tau*(r-q-0.5*(sigma**2))
+    c2 = (sigma**2)*tau
 
     a = c1 - L*np.sqrt(np.abs(c2))
     b = c1 + L*np.sqrt(np.abs(c2))
@@ -70,7 +67,6 @@ def mjd_bounds(x, tau, r, q, params, L=12):
     return a, b
 
 def heston_bounds(x, tau, r, q, params, L=12):
-    i = 1j
     v0, theta, kappa, sigma, rho = params
 
     a = rho*sigma/kappa - 1 - (sigma**2)/(4*(kappa**2))
@@ -80,13 +76,13 @@ def heston_bounds(x, tau, r, q, params, L=12):
     etk = np.exp(tau*kappa)
     etkn = 1/etk
 
-    du = (-i/(2*kappa))*(1 - etkn)
+    du = (-1/(2*kappa))*(1 - etkn)
     duu = etkn*((a/kappa)*(etk-1) + b*tau + (c/kappa)*(1-etkn))
 
-    cu = i*(r-q)*tau - 0.5*(i*theta)*(tau+(etkn-1)/kappa)
+    cu = (r-q)*tau - 0.5*(theta)*(tau+(etkn-1)/kappa)
     cuu = theta*(a*(tau-(1-etkn)/kappa) + (b/kappa)*(1-etkn*(kappa*tau + 1)) + (c/kappa)*(1-etkn-0.5*(1-np.exp(-2*tau*kappa))))
 
-    c1 = (i*x + cu + v0*du)/i
+    c1 = x + cu + v0*du
     c2 = -(cuu + v0*duu)
 
     a = c1 - L*np.sqrt(np.abs(c2))
@@ -95,7 +91,6 @@ def heston_bounds(x, tau, r, q, params, L=12):
     return a, b
 
 def bates_bounds(x, tau, r, q, params, L=12):
-    i = 1j
     v0, theta, kappa, sigma, rho, lambd, muj, sigmaj = params
 
     a = rho*sigma/kappa - 1 - (sigma**2)/(4*(kappa**2))
@@ -105,16 +100,16 @@ def bates_bounds(x, tau, r, q, params, L=12):
     etk = np.exp(tau*kappa)
     etkn = 1/etk
 
-    du = (-i/(2*kappa))*(1 - etkn)
+    du = (-1/(2*kappa))*(1 - etkn)
     duu = etkn*((a/kappa)*(etk-1) + b*tau + (c/kappa)*(1-etkn))
 
-    cu = i*(r-q-lambd*(np.exp(muj + 0.5*sigmaj**2) - 1))*tau - 0.5*(i*theta)*(tau+(etkn-1)/kappa)
+    cu = (r-q-lambd*(np.exp(muj + 0.5*sigmaj**2) - 1))*tau - 0.5*(theta)*(tau+(etkn-1)/kappa)
     cuu = theta*(a*(tau-(1-etkn)/kappa) + (b/kappa)*(1-etkn*(kappa*tau + 1)) + (c/kappa)*(1-etkn-0.5*(1-np.exp(-2*tau*kappa))))
 
-    mjdu = i*lambd*tau*muj
+    mjdu = lambd*tau*muj
     mjduu = -lambd*tau*((sigmaj**2) + (muj**2))
 
-    c1 = (i*x + cu + v0*du + mjdu)/i
+    c1 = x + cu + v0*du + mjdu
     c2 = -(cuu + v0*duu + mjduu)
 
     a = c1 - L*np.sqrt(np.abs(c2))
