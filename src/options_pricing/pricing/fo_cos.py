@@ -7,7 +7,7 @@ def precompute(k, N):
 
     return log_strike, j
 
-def fo_cos(cf, x, tau, r, q, params, lnk, k, j, a, b):
+def call(cf, x, tau, r, q, params, lnk, k, j, a, b):
     N = j.shape[1]
     tau = tau[:, None, None]
 
@@ -35,9 +35,77 @@ def fo_cos(cf, x, tau, r, q, params, lnk, k, j, a, b):
     w = np.ones_like(aj)
     w[:, :, 0] = 0.5
 
-    c = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
+    calls = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
 
-    return np.real(c)
+    return np.real(calls)
+
+def delta(cf, x, tau, r, q, params, lnk, k, j, a, b):
+    i = 1j
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(a, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i2 = (k*np.sin(uj*(c-a)))/uj
+
+    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi[:, :, 1:] = cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    phi[:, :, 0] = 1.0
+
+    u = u.transpose(0, 2, 1)
+    aj = 2*np.real(phi*np.exp(-i*a*u)*i*u)/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    d = np.squeeze(np.exp(-r*tau)*(w*aj @ v)/np.exp(x))
+
+    return np.real(d)
+
+def gamma(cf, x, tau, r, q, params, lnk, k, j, a, b):
+    i = 1j
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(a, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i2 = (k*np.sin(uj*(c-a)))/uj
+
+    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi[:, :, 1:] = cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    phi[:, :, 0] = 1.0
+
+    u = u.transpose(0, 2, 1)
+    aj = 2*np.real(phi*np.exp(-i*a*u)*((-(u)**2)-i*u))/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    g = np.squeeze(np.exp(-r*tau)*(w*aj @ v)/(np.exp(x)**2))
+
+    return np.real(g)
 
 def bs_bounds(x, tau, r, q, params, L=12):
     i = 1j

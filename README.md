@@ -8,7 +8,13 @@ Models:
 * Heston
 * Bates
 
-This library uses Fang and Osterlee's COS method for the pricing.
+This library uses Fang and Osterlee's COS method for the pricing. The Greeks are found with analytical formulas approximated by COS method.
+
+Greeks:
+* Delta
+* Gamma
+* Black-Scholes Vega
+* Heston and Bates Vega $\frac{\partial C}{\partial v_0}$
 
 ![Alt Text](/images/implied_volatility_surface.png)
 

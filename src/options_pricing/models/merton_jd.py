@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def mjd_charfun(u, x, tau, r, q, params):
+def charfun(u, x, tau, r, q, params):
     i = 1j
     sigma, lambd, muj, sigmaj = params
 

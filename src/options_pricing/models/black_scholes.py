@@ -3,7 +3,7 @@ from scipy.stats import norm
 from scipy.optimize import newton
 
 
-def bs_charfun(u, x, tau, r, q, params):
+def charfun(u, x, tau, r, q, params):
     i = 1j
     sigma = params[0]
 
@@ -13,7 +13,7 @@ def bs_charfun(u, x, tau, r, q, params):
     return np.exp(i*u*x + psi1 + psi2)
 
 
-def bs_call(s0, k, tau, r, sigma):
+def call(s0, k, tau, r, sigma):
     d1 = np.log(s0/k) + tau*(r + 0.5*sigma**2)/(sigma*np.sqrt(tau))
     d2 = d1 - sigma*np.sqrt(tau)
 
@@ -47,7 +47,7 @@ def iv_solve(c, s0, k, tau, r, tol=1e-8, max_iter=200):
         vega = vega_fun(s0_act, k_act, tau_act, r, sigma_act)
         vega = np.clip(vega, 1e-10, np.inf)
 
-        c_bs = bs_call(s0_act, k_act, tau_act, r, sigma_act)
+        c_bs = call(s0_act, k_act, tau_act, r, sigma_act)
 
         diff = c_bs - c_act
 
