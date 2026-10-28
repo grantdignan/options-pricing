@@ -13,6 +13,8 @@ This library uses Fang and Osterlee's COS method for the pricing. The Greeks are
 Greeks:
 * Delta
 * Gamma
+* Theta
+* Rho
 * Black-Scholes Vega
 * Heston and Bates Vega $\frac{\partial C}{\partial v_0}$
 

@@ -22,10 +22,42 @@ def call(cf, x, tau, r, q, params, lnk, k, j, a, b):
 
     uj = u[:, 1:, :]
     i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
-    i2 = (k*np.sin(uj*(c-a)))/uj
+    i2 = np.sin(uj*(c-a))/uj
 
-    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 1:, :] = np.real(i1 + k*i2)
     v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi[:, :, 1:] = cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    phi[:, :, 0] = 1.0
+
+    aj = 2*np.real(phi*np.exp(-1j*a*u.transpose(0, 2, 1)))/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    calls = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
+
+    return np.real(calls)
+
+def put(cf, x, tau, r, q, params, lnk, k, j, a, b):
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(b, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(c)*np.cos(uj*(c-a))-np.exp(a)+uj*np.exp(c)*np.sin(uj*(c-a)))/(1+uj**2)
+    i2 = np.sin(uj*(c-a))/uj
+
+    v[:, 1:, :] = np.real(k*i2 - i1)
+    v[:, 0, :] = np.real(k*(c-a) + np.exp(a) - np.exp(c))[:, 0, :]
 
     phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
     phi[:, :, 1:] = cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
@@ -106,6 +138,108 @@ def gamma(cf, x, tau, r, q, params, lnk, k, j, a, b):
     g = np.squeeze(np.exp(-r*tau)*(w*aj @ v)/(np.exp(x)**2))
 
     return np.real(g)
+
+def vega(vega_cf, x, tau, r, q, params, lnk, k, j, a, b):
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(a, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i2 = (k*np.sin(uj*(c-a)))/uj
+
+    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi[:, :, 1:] = vega_cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    phi[:, :, 0] = 1.0
+
+    aj = 2*np.real(phi*np.exp(-1j*a*u.transpose(0, 2, 1)))/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    calls = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
+
+    return np.real(calls)
+
+def theta(theta_cf, x, tau, r, q, params, lnk, k, j, a, b):
+    i = 1j
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(a, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i2 = (k*np.sin(uj*(c-a)))/uj
+
+    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    psi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi = np.empty_like(psi, dtype=np.complex128)
+    psi[:, :, 1:], phi[:, :, 1:] = theta_cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    psi[:, :, 0] = theta_cf(0, x, tau, r, q, params)[0][:, :, 0]
+    phi[:, :, 0] = 1.0
+
+    u = u.transpose(0, 2, 1)
+    aj = 2*np.real(phi*np.exp(-i*a*u)*(-r+psi))/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    t = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
+
+    return np.real(t)
+
+def rho(cf, x, tau, r, q, params, lnk, k, j, a, b):
+    i = 1j
+    N = j.shape[1]
+    tau = tau[:, None, None]
+
+    b = b[:, None, None]
+    a = a[:, None, None]
+    u = j*np.pi/(b-a)
+
+    k = k[None, None, :]
+    c = np.maximum(a, lnk)
+
+    v = np.empty((tau.shape[0], N, k.shape[2]))
+
+    uj = u[:, 1:, :]
+    i1 = (np.exp(b)*((-1)**j[:, 1:, :]) - uj*np.exp(c)*np.sin(uj*(c-a)) - np.exp(c)*np.cos(uj*(c-a)))/(1+uj**2)
+    i2 = (k*np.sin(uj*(c-a)))/uj
+
+    v[:, 1:, :] = np.real(i1 + i2)
+    v[:, 0, :] = np.real(np.exp(b) - np.exp(c) - k*(b-c))[:, 0, :]
+
+    phi = np.empty((tau.shape[0], 1, N), dtype=np.complex128)
+    phi[:, :, 1:] = cf(uj.transpose(0, 2, 1), x, tau, r, q, params)
+    phi[:, :, 0] = 1.0
+
+    u = u.transpose(0, 2, 1)
+    aj = 2*np.real(phi*np.exp(-i*a*u)*tau*(i*u-1))/(b-a)
+    w = np.ones_like(aj)
+    w[:, :, 0] = 0.5
+
+    t = np.squeeze(np.exp(-r*tau)*(w*aj @ v))
+
+    return np.real(t)
 
 def bs_bounds(x, tau, r, q, params, L=12):
     i = 1j

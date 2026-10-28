@@ -19,7 +19,13 @@ def call(s0, k, tau, r, sigma):
 
     return s0*norm.cdf(d1) - k*np.exp(-r*tau)*norm.cdf(d2)
 
-def vega_fun(s0, k, tau, r, sigma):
+def put(s0, k, tau, r, sigma):
+    d1 = np.log(s0/k) + tau*(r + 0.5*sigma**2)/(sigma*np.sqrt(tau))
+    d2 = d1 - sigma*np.sqrt(tau)
+
+    return k*np.exp(-r*tau)*norm.cdf(-d2) - s0*norm.cdf(-d1)
+
+def vega(s0, k, tau, r, sigma):
     d1 = np.log(s0/k) + tau*(r + 0.5*sigma**2)/(sigma*np.sqrt(tau))
 
     return s0*np.sqrt(tau)*norm.pdf(d1)
@@ -44,14 +50,14 @@ def iv_solve(c, s0, k, tau, r, tol=1e-8, max_iter=200):
         k_act = k[active]
         sigma_act = sigma[active]
 
-        vega = vega_fun(s0_act, k_act, tau_act, r, sigma_act)
-        vega = np.clip(vega, 1e-10, np.inf)
+        vega_ = vega(s0_act, k_act, tau_act, r, sigma_act)
+        vega_ = np.clip(vega_, 1e-10, np.inf)
 
         c_bs = call(s0_act, k_act, tau_act, r, sigma_act)
 
         diff = c_bs - c_act
 
-        sigma[active] = sigma_act - diff/vega
+        sigma[active] = sigma_act - diff/vega_
 
         active[active] = np.abs(diff) >= tol
 
