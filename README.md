@@ -32,6 +32,7 @@ uv sync
 ```
 
 ## Roadmap
+* **Important: switching to C++**
 * eSSVI
 * Rough Heston
 * Quadratic Rough Heston
